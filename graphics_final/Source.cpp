@@ -89,7 +89,7 @@ cy::GLRenderDepth2D depth_buff;
 cyGLTexture2D noise_tex;
 	//rand
 
-float off = 1;
+float off = 1.5;
 //main function
 int main(int argc, char** argv)
 {
@@ -165,7 +165,7 @@ void InitializeNoise()
 	noise_tex.Initialize();
 	std::vector<unsigned char> image;
 	unsigned tex_w, tex_h;
-	lodepng::decode(image, tex_w, tex_h, "noiseTexture2.png");
+	lodepng::decode(image, tex_w, tex_h, "noiseTexture1.png");
 	noise_tex.SetImage(&image.front(),4,tex_w,tex_h,0);
 	noise_tex.BuildMipmaps();
 }
@@ -202,6 +202,8 @@ void set_uniforms()
 	output_prog["depthMap"] = 3;
 	output_prog["dim"] = cy::Vec2f(window_width, window_height);
 	output_prog["dist"] = cam_dist;
+	output_prog["edgeMat"] = cy::Matrix2f(1/(3*cam_dist),.003,.0001, 1 / (3 * cam_dist));
+	output_prog["shadeMat"] = cy::Matrix2f(1/(3*cam_dist),.002,.01, 1 / (3 * cam_dist));
 
 }
 void set_vao()
