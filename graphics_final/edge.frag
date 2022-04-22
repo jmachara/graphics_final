@@ -40,7 +40,7 @@ void main()
 	discontinuity.y = (1.0-0.5*abs(A.w-H.w)) * (1.0-0.5*abs(C.w-F.w)); 
 	discontinuity.z = discontinuity.x*discontinuity.y; 
 	// Output edge intensities to the edge map 
-	if(discontinuity.x < .9 && discontinuity.z < .9 && gl_FrontFacing)
+	if(discontinuity.x < .99 && discontinuity.z < .97 && gl_FrontFacing)
 	{
 		color = vec4(0,0,0,1);
 	}

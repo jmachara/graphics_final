@@ -72,6 +72,9 @@ double rotz = 0;
 int obj_buff_size;
 int norm_buff_size;
 int square_buff;
+float alpha = 40;
+float pot_color = 0.0;
+cy::Vec3f light_position;
 	//Camera
 float cam_dist = 50;
 float fov = .7;
@@ -87,9 +90,10 @@ cy::GLRenderTexture2D shade_buff;
 cy::GLRenderTexture2D noise_buff;
 cy::GLRenderDepth2D depth_buff;
 cyGLTexture2D noise_tex;
+cyGLTexture2D brick_tex;
 	//rand
 
-float off = 1.5;
+float off = 1;
 //main function
 int main(int argc, char** argv)
 {
@@ -163,11 +167,16 @@ void InitializeGlutFuncs()
 void InitializeNoise()
 {
 	noise_tex.Initialize();
+	brick_tex.Initialize();
 	std::vector<unsigned char> image;
-	unsigned tex_w, tex_h;
-	lodepng::decode(image, tex_w, tex_h, "noiseTexture1.png");
+	unsigned tex_w, tex_h,tex_w2,tex_h2;
+	lodepng::decode(image, tex_w, tex_h, "noiseTexture.png");
 	noise_tex.SetImage(&image.front(),4,tex_w,tex_h,0);
 	noise_tex.BuildMipmaps();
+	image.clear();
+	lodepng::decode(image, tex_w2, tex_h2, "brick.png");
+	brick_tex.SetImage(&image.front(), 4, tex_w2, tex_h2, 0);
+	brick_tex.BuildMipmaps();
 }
 void ComputeObjectMiddle()
 {
@@ -179,6 +188,7 @@ void ComputeObjectMiddle()
 }
 void set_uniforms()
 {
+	light_position = cy::Vec3f(1,1,0);
 	//program 1
 	prog["mvp"] = create_mvp(object_mid, rotx, rotz, cam_dist);
 	prog["norm_mv"] = create_norm_mv(object_mid, rotx, rotz, cam_dist);
@@ -190,20 +200,26 @@ void set_uniforms()
 	prog2["GBuffers"] = 0;
 	//program 3
 	prog3["mvp"] = create_mvp(object_mid, rotx, rotz, cam_dist);
+	prog3["norm_mv"] = create_norm_mv(object_mid, rotx, rotz, cam_dist);
+	prog3["l_dir"] = (light_position- cy::Vec3f(0, 0, 0)).GetNormalized();
+	prog3["v_dir"] = (camera_pos - cy::Vec3f(0,0,0)).GetNormalized();;
+	prog3["amb_l"] = cy::Vec3f(.3, .3, .3);
+	prog3["alpha"] = alpha;
 	prog3["tex"] = 0;
+	prog3["c"] = pot_color;
 	//program 4
 	prog4["mvp"] = create_mvp(object_mid, rotx, rotz, cam_dist);
 	prog4["noise"] = 0;
 	//output
-	output_prog["mvp"] = create_mvp(0, 0, 0, cam_dist/2);
+	output_prog["mvp"] = create_mvp(0, 0, 0, 25);
 	output_prog["noiseMap"] = 0;
 	output_prog["shadeMap"] = 1;
 	output_prog["edgeMap"] = 2;
 	output_prog["depthMap"] = 3;
 	output_prog["dim"] = cy::Vec2f(window_width, window_height);
 	output_prog["dist"] = cam_dist;
-	output_prog["edgeMat"] = cy::Matrix2f(1/(3*cam_dist),.003,.0001, 1 / (3 * cam_dist));
-	output_prog["shadeMat"] = cy::Matrix2f(1/(3*cam_dist),.002,.01, 1 / (3 * cam_dist));
+	output_prog["edgeMat"] = cy::Matrix2f(-1/(2*cam_dist),0.001,.004,- 1 / (2 * cam_dist));
+	output_prog["shadeMat"] = cy::Matrix2f(-1/(2*cam_dist),-0.002,0.004,- 1 / (2 * cam_dist));
 
 }
 void set_vao()
@@ -442,6 +458,7 @@ void render_shade_buffer()
 	prog3.Bind();
 	shade_buff.Initialize(true, 3, window_width, window_height);
 	shade_buff.Bind();
+	brick_tex.Bind(0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDrawArrays(GL_TRIANGLES, 0, obj_buff_size);
 	shade_buff.Unbind();
@@ -453,7 +470,6 @@ void render_shade_buffer()
 void render_noise_buffer()
 {
 	prog4.Bind();
-
 	noise_buff.Initialize(true, 3, window_width, window_height);
 	noise_buff.Bind();
 	noise_tex.Bind(0);
@@ -479,10 +495,10 @@ void render_drawing()
 void display_function()
 {
 	glEnable(GL_DEPTH_TEST);
+	render_shade_buffer();
 	render_depth_buffer();
 	render_g_buffer();
 	render_noise_buffer();
-	render_shade_buffer();
 	render_edge_buffer();
 	render_drawing();
 	glutSwapBuffers();
@@ -493,7 +509,19 @@ void keyboard_function(unsigned char key, int x, int y)
 	case 27://esc
 		glutLeaveMainLoop();
 		break;
+	case 97://a
+		alpha *= 2;
+		if (alpha > 1000)
+			alpha = 40;
+		break;
+	case 99://c
+		if (pot_color > 0)
+			pot_color -= 1;
+		else
+			pot_color += 1;
+		break;
 	}
+	set_uniforms();
 	glutPostRedisplay();
 
 }

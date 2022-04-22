@@ -17,10 +17,8 @@ void main()
 {
 	vec2 texCoord = vec2(gl_FragCoord.x/dim.x,gl_FragCoord.y/dim.y);
 	vec2 noiseValue = texture2D(noiseMap,texCoord).xy;
-	//vec2 noisytexCoord = texCoord + noiseValue/(2*d);
-	vec2 edgeTexCoord = texCoord.xy + (edgeMat*noiseValue);
-	vec2 shadeTexCoord = texCoord.xy + (shadeMat*noiseValue);
-	//float depth = texture2D(depthMap,noisytexCoord).r;
+	vec2 edgeTexCoord = texCoord.xy - (edgeMat*noiseValue);
+	vec2 shadeTexCoord = texCoord.xy - (shadeMat*noiseValue);
 	float edgeDepth = float(texture2D(depthMap, edgeTexCoord).xyz); 
 	float shadeDepth = float(texture2D(depthMap, shadeTexCoord).xyz); 
 	float depth = min(edgeDepth, shadeDepth);
